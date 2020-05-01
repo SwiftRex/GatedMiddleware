@@ -95,13 +95,16 @@ public final class GatedMiddleware<M: Middleware>: Middleware {
     /// unwrapped versions of `getState` and `output` as properties of your concrete middleware, and set them from the arguments of this function.
     ///
     /// This will be always forwarded to the inner middleware regardless of its gate state, another reason for you to never start side-effects on this
-    /// event
+    /// event. However, this is proxied by the gated middleware, and output will only be forwarded to the store in case the gate state is active.
     ///
     /// - Parameters:
     ///   - getState: a closure that allows the middleware to read the current state at any point in time
     ///   - output: an action handler that allows the middleware to dispatch new actions at any point in time
     public func receiveContext(getState: @escaping GetState<M.StateType>, output: AnyActionHandler<M.OutputActionType>) {
-        middleware.receiveContext(getState: getState, output: output)
+        middleware.receiveContext(getState: getState, output: .init { [weak self] outputAction, source in
+            guard let self = self, self.gate == .active else { return }
+            output.dispatch(outputAction, from: source)
+        })
     }
 
     /// Handles the incoming actions and may or not start async tasks, check the latest state at any point or dispatch additional actions.
