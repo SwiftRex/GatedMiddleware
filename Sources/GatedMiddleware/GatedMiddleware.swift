@@ -229,4 +229,33 @@ extension Middleware {
     ) -> GatedMiddleware<Self> {
         GatedMiddleware(middleware: self, controlActionMap: controlActionMap, turnOn: true, turnOff: false, default: gateState)
     }
+
+    /// Gated middleware is a middleware that holds an inner middleware that could be either active or not. The gated middleware has an internal state,
+    /// called `gate state`, that determines whether or not the inner middleware should be in `active` or `bypass` mode. This can be changed dynamically.
+    ///
+    /// Every gated middleware starts with an initial gate state, called "default gate state". From that point, it will evaluate all incoming actions to
+    /// detect a "control action", which is an action for switching on or off the gate state. This control action is detected thanks to a control action
+    /// map or a control map KeyPath configured in the GatedMiddleware's init, which from a given input action allows the user to inform either or not
+    /// this is a control action returning an Optional instance of that ControlAction (or nil in case it's a regular action).
+    ///
+    /// The init also requires some comparison values, for turnOn or turnOff the gate. If it's a control action, and it's equals to turn on, it will set
+    /// the inner middleware to active. If it's a control action, and it's equals to turn off, it will set the inner middleware to bypass. If it's not a
+    /// control action, or it's not equals to any of the comparison values, the gate will remain untouched.
+    ///
+    /// There one last important topic. The gated middleware will ALWAYS forward control actions to inner middlewares, regardless of their gate state
+    /// (active or bypass) and regardless of the turn on/turn off comparison result. This will allow important actions like disabling or enabling the
+    /// inner middleware for control actions, so for example, even for when we close the gate we still want to tell the inner middleware that it's gonna
+    /// be bypassed and it should kill all of its timers or async side-effects.
+    /// - Parameters:
+    ///   - controlAction: a key-path that goes from incoming action to an optional `GateState`. It result is nil, it means this is not a control
+    ///                    action. In case it has a non-nil `GateState`, this will enable (for `.active`) or bypass (for `.bypass`) the inner
+    ///                    middleware. The inner middleware will also receive that control action regardless of its gate state.
+    ///   - gateState: initial `gateState`, either `active` or `bypass`
+    /// - Returns: a `GatedMiddleware` containing internally this current middleware, allowing it to be bypassed or not.
+    public func gated(
+        controlActionMap: @escaping (InputActionType) -> GateState?,
+        default gateState: GateState
+    ) -> GatedMiddleware<Self> {
+        GatedMiddleware(middleware: self, controlActionMap: controlActionMap, turnOn: .active, turnOff: .bypass, default: gateState)
+    }
 }
