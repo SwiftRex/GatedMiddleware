@@ -92,14 +92,13 @@ extension Gate {
 /// trigger inner middleware before and after the reducer, and after the reducer that value will be already set to `bypass`, so you can stop timers
 /// and async tasks. An action that changes the state from `bypass` to `active`, will not trigger the inner middleware before the reducer nor after
 /// it, so you may want to send a second action to start the middleware timers again, because the gated middleware can't do that for you.
-public final class GatedMiddleware<M: Middleware>: Middleware {
+public final class GatedMiddleware<M: MiddlewareProtocol>: MiddlewareProtocol {
     public typealias InputActionType = M.InputActionType
     public typealias OutputActionType = M.OutputActionType
     public typealias StateType = M.StateType
 
     private let middleware: M
     private let gate: Gate<InputActionType, OutputActionType, StateType>
-    private var getState: GetState<StateType>?
 
     /// GatedMiddleware by action init with Closure variant
     /// - Parameters:
@@ -170,27 +169,6 @@ public final class GatedMiddleware<M: Middleware>: Middleware {
         self.init(middleware: middleware, stateMap: { $0[keyPath: state] })
     }
 
-    /// Middleware setup. This function will be called before actions are handled to the middleware, so you can configure your middleware with the
-    /// given parameters. You can hold any of them if you plan to read the state or dispatch new actions.
-    /// You can initialize and start timers or async tasks in here or in the `handle(action:next)` function, but never before this function is called,
-    /// otherwise the middleware would not yet be running from a store.
-    /// Because no actions are delivered to this middleware before the `receiveContext(getState:output:)` is called, you can safely keep implicit
-    /// unwrapped versions of `getState` and `output` as properties of your concrete middleware, and set them from the arguments of this function.
-    ///
-    /// This will be always forwarded to the inner middleware regardless of its gate state, another reason for you to never start side-effects on this
-    /// event. However, this is proxied by the gated middleware, and output will only be forwarded to the store in case the gate state is active.
-    ///
-    /// - Parameters:
-    ///   - getState: a closure that allows the middleware to read the current state at any point in time
-    ///   - output: an action handler that allows the middleware to dispatch new actions at any point in time
-    public func receiveContext(getState: @escaping GetState<M.StateType>, output: AnyActionHandler<M.OutputActionType>) {
-        self.getState = getState
-        middleware.receiveContext(getState: getState, output: .init { [weak self] outputAction, source in
-            guard let self = self, self.gate.shouldDispatchAction(outputAction, getState()) else { return }
-            output.dispatch(outputAction, from: source)
-        })
-    }
-
     /// Handles the incoming actions and may or not start async tasks, check the latest state at any point or dispatch additional actions.
     /// This is also a good place for analytics, tracking, logging and telemetry. You can schedule tasks to run after the reducer changed the global
     /// state if you want, and/or execute things before the reducer.
@@ -215,17 +193,30 @@ public final class GatedMiddleware<M: Middleware>: Middleware {
     /// - Parameters:
     ///   - action: the action to be handled
     ///   - dispatcher: information about the action source, representing the entity that created and dispatched the action
-    ///   - afterReducer: it can be set to perform any operation after the reducer has changed the global state. If the function ends before you set
-    ///                   this in/out parameter, `afterReducer` will default to `.doNothing()`.
-    public func handle(action: M.InputActionType, from dispatcher: ActionSource, afterReducer: inout AfterReducer) {
-        guard let state = self.getState?(),
-            gate.shouldHandleAction(action, state) else { return }
+    ///   - state: read the most up-to-date state at any point
+    /// - Returns: IO closure, where side-effects should be put, and from where actions can be dispatched. In the Gated Middleware this will not
+    ///            do anything in case the predicate is not satisfied, or it will forward the action to the inner middleware in case the predicate
+    ///            is true.
+    public func handle(action: M.InputActionType, from dispatcher: ActionSource, state: @escaping GetState<M.StateType>) -> IO<M.OutputActionType> {
+        print(action)
+        dump(state())
+        guard gate.shouldHandleAction(action, state()) else { return .pure() }
 
-        middleware.handle(action: action, from: dispatcher, afterReducer: &afterReducer)
+        return middleware.handle(action: action, from: dispatcher, state: state)
+            .flatMap { [weak self] actionFromInnerMiddlewareAsResponse in
+                guard let self = self,
+                      self.gate.shouldHandleAction(action, state()),
+                      self.gate.shouldDispatchAction(actionFromInnerMiddlewareAsResponse.action, state())
+                else { return .pure() }
+
+                return IO { output in
+                    output.dispatch(actionFromInnerMiddlewareAsResponse)
+                }
+            }
     }
 }
 
-extension Middleware {
+extension MiddlewareProtocol {
     /// Gated middleware is a middleware that holds an inner middleware that could be either active or not.
     ///
     /// This creates a GatedMiddleware by action:
@@ -441,7 +432,7 @@ extension Middleware {
     }
 }
 
-extension Middleware {
+extension MiddlewareProtocol {
     /// Gated middleware is a middleware that holds an inner middleware that could be either active or not.
     ///
     /// This creates a GatedMiddleware by state:
