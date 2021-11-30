@@ -10,24 +10,19 @@ final class GatedMiddlewareTests: XCTestCase {
             controlActionMap: { $0.enableSample },
             default: .active
         )
-        gatedMiddleware.receiveContext(getState: store.getState, output: store.actionHandler)
-        XCTAssertEqual(sampleMiddleware.receiveContextCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionCount, 0)
-        XCTAssertEqual(sampleMiddleware.handleActionAfterReducerCount, 0)
+        XCTAssertEqual(sampleMiddleware.handleActionStateCount, 0)
+        XCTAssertEqual(sampleMiddleware.handleActionStateIOCount, 0)
 
-        var afterReducer = AfterReducer.doNothing()
-        gatedMiddleware.handle(action: .somethingElse, from: .here(), afterReducer: &afterReducer)
-        XCTAssertEqual(sampleMiddleware.receiveContextCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionAfterReducerCount, 0)
+        let io = gatedMiddleware.handle(action: .somethingElse, from: .here(), state: store.getState)
+        XCTAssertEqual(sampleMiddleware.handleActionStateCount, 1)
+        XCTAssertEqual(sampleMiddleware.handleActionStateIOCount, 0)
 
-        afterReducer.reducerIsDone()
-        XCTAssertEqual(sampleMiddleware.receiveContextCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionAfterReducerCount, 1)
+        io.runIO(store.actionHandler)
+        XCTAssertEqual(sampleMiddleware.handleActionStateCount, 1)
+        XCTAssertEqual(sampleMiddleware.handleActionStateIOCount, 1)
 
         sampleMiddleware.send(action: .oneMore)
-        XCTAssertEqual(store.actionsReceived, [.oneMore])
+        XCTAssertEqual(store.actionsReceived.map(\.action), [.oneMore])
     }
 
     func testByActionAfterDisable() {
@@ -37,32 +32,24 @@ final class GatedMiddlewareTests: XCTestCase {
             controlActionMap: { $0.enableSample },
             default: .active
         )
-        gatedMiddleware.receiveContext(getState: store.getState, output: store.actionHandler)
-        XCTAssertEqual(sampleMiddleware.receiveContextCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionCount, 0)
-        XCTAssertEqual(sampleMiddleware.handleActionAfterReducerCount, 0)
+        XCTAssertEqual(sampleMiddleware.handleActionStateCount, 0)
+        XCTAssertEqual(sampleMiddleware.handleActionStateIOCount, 0)
 
-        var afterReducer1 = AfterReducer.doNothing()
-        gatedMiddleware.handle(action: .toggleSampleMiddleware(false), from: .here(), afterReducer: &afterReducer1)
-        XCTAssertEqual(sampleMiddleware.receiveContextCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionAfterReducerCount, 0)
+        let io1 = gatedMiddleware.handle(action: .toggleSampleMiddleware(false), from: .here(), state: store.getState)
+        XCTAssertEqual(sampleMiddleware.handleActionStateCount, 1)
+        XCTAssertEqual(sampleMiddleware.handleActionStateIOCount, 0)
 
-        afterReducer1.reducerIsDone()
-        XCTAssertEqual(sampleMiddleware.receiveContextCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionAfterReducerCount, 1)
+        io1.runIO(store.actionHandler)
+        XCTAssertEqual(sampleMiddleware.handleActionStateCount, 1)
+        XCTAssertEqual(sampleMiddleware.handleActionStateIOCount, 1)
 
-        var afterReducer2 = AfterReducer.doNothing()
-        gatedMiddleware.handle(action: .somethingElse, from: .here(), afterReducer: &afterReducer2)
-        XCTAssertEqual(sampleMiddleware.receiveContextCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionAfterReducerCount, 1)
+        let io2 = gatedMiddleware.handle(action: .somethingElse, from: .here(), state: store.getState)
+        XCTAssertEqual(sampleMiddleware.handleActionStateCount, 1)
+        XCTAssertEqual(sampleMiddleware.handleActionStateIOCount, 1)
 
-        afterReducer2.reducerIsDone()
-        XCTAssertEqual(sampleMiddleware.receiveContextCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionAfterReducerCount, 1)
+        io2.runIO(store.actionHandler)
+        XCTAssertEqual(sampleMiddleware.handleActionStateCount, 1)
+        XCTAssertEqual(sampleMiddleware.handleActionStateIOCount, 1)
 
         sampleMiddleware.send(action: .oneMore)
         XCTAssertEqual(store.actionsReceived, [])
@@ -75,32 +62,24 @@ final class GatedMiddlewareTests: XCTestCase {
             controlActionMap: { $0.enableSample },
             default: .active
         )
-        gatedMiddleware.receiveContext(getState: store.getState, output: store.actionHandler)
-        XCTAssertEqual(sampleMiddleware.receiveContextCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionCount, 0)
-        XCTAssertEqual(sampleMiddleware.handleActionAfterReducerCount, 0)
+        XCTAssertEqual(sampleMiddleware.handleActionStateCount, 0)
+        XCTAssertEqual(sampleMiddleware.handleActionStateIOCount, 0)
 
-        var afterReducer1 = AfterReducer.doNothing()
-        gatedMiddleware.handle(action: .toggleSampleMiddleware(false), from: .here(), afterReducer: &afterReducer1)
-        XCTAssertEqual(sampleMiddleware.receiveContextCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionAfterReducerCount, 0)
+        let io1 = gatedMiddleware.handle(action: .toggleSampleMiddleware(false), from: .here(), state: store.getState)
+        XCTAssertEqual(sampleMiddleware.handleActionStateCount, 1)
+        XCTAssertEqual(sampleMiddleware.handleActionStateIOCount, 0)
 
-        afterReducer1.reducerIsDone()
-        XCTAssertEqual(sampleMiddleware.receiveContextCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionAfterReducerCount, 1)
+        io1.runIO(store.actionHandler)
+        XCTAssertEqual(sampleMiddleware.handleActionStateCount, 1)
+        XCTAssertEqual(sampleMiddleware.handleActionStateIOCount, 1)
 
-        var afterReducer2 = AfterReducer.doNothing()
-        gatedMiddleware.handle(action: .toggleSampleMiddleware(false), from: .here(), afterReducer: &afterReducer2)
-        XCTAssertEqual(sampleMiddleware.receiveContextCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionCount, 2)
-        XCTAssertEqual(sampleMiddleware.handleActionAfterReducerCount, 1)
+        let io2 = gatedMiddleware.handle(action: .toggleSampleMiddleware(false), from: .here(), state: store.getState)
+        XCTAssertEqual(sampleMiddleware.handleActionStateCount, 2)
+        XCTAssertEqual(sampleMiddleware.handleActionStateIOCount, 1)
 
-        afterReducer2.reducerIsDone()
-        XCTAssertEqual(sampleMiddleware.receiveContextCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionCount, 2)
-        XCTAssertEqual(sampleMiddleware.handleActionAfterReducerCount, 2)
+        io2.runIO(store.actionHandler)
+        XCTAssertEqual(sampleMiddleware.handleActionStateCount, 2)
+        XCTAssertEqual(sampleMiddleware.handleActionStateIOCount, 2)
 
         sampleMiddleware.send(action: .oneMore)
         XCTAssertEqual(store.actionsReceived, [])
@@ -113,39 +92,30 @@ final class GatedMiddlewareTests: XCTestCase {
             controlActionMap: { $0.enableSample },
             default: .active
         )
-        gatedMiddleware.receiveContext(getState: store.getState, output: store.actionHandler)
-        var afterReducer1 = AfterReducer.doNothing()
-        gatedMiddleware.handle(action: .toggleSampleMiddleware(false), from: .here(), afterReducer: &afterReducer1)
-        afterReducer1.reducerIsDone()
+        let io1 = gatedMiddleware.handle(action: .toggleSampleMiddleware(false), from: .here(), state: store.getState)
+        io1.runIO(store.actionHandler)
 
-        var afterReducer2 = AfterReducer.doNothing()
-        gatedMiddleware.handle(action: .somethingElse, from: .here(), afterReducer: &afterReducer2)
-        afterReducer2.reducerIsDone()
+        let io2 = gatedMiddleware.handle(action: .somethingElse, from: .here(), state: store.getState)
+        io2.runIO(store.actionHandler)
 
-        var afterReducer3 = AfterReducer.doNothing()
-        gatedMiddleware.handle(action: .toggleSampleMiddleware(true), from: .here(), afterReducer: &afterReducer3)
-        XCTAssertEqual(sampleMiddleware.receiveContextCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionCount, 2)
-        XCTAssertEqual(sampleMiddleware.handleActionAfterReducerCount, 1)
+        let io3 = gatedMiddleware.handle(action: .toggleSampleMiddleware(true), from: .here(), state: store.getState)
+        XCTAssertEqual(sampleMiddleware.handleActionStateCount, 2)
+        XCTAssertEqual(sampleMiddleware.handleActionStateIOCount, 1)
 
-        afterReducer3.reducerIsDone()
-        XCTAssertEqual(sampleMiddleware.receiveContextCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionCount, 2)
-        XCTAssertEqual(sampleMiddleware.handleActionAfterReducerCount, 2)
+        io3.runIO(store.actionHandler)
+        XCTAssertEqual(sampleMiddleware.handleActionStateCount, 2)
+        XCTAssertEqual(sampleMiddleware.handleActionStateIOCount, 2)
 
-        var afterReducer4 = AfterReducer.doNothing()
-        gatedMiddleware.handle(action: .somethingElse, from: .here(), afterReducer: &afterReducer4)
-        XCTAssertEqual(sampleMiddleware.receiveContextCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionCount, 3)
-        XCTAssertEqual(sampleMiddleware.handleActionAfterReducerCount, 2)
+        let io4 = gatedMiddleware.handle(action: .somethingElse, from: .here(), state: store.getState)
+        XCTAssertEqual(sampleMiddleware.handleActionStateCount, 3)
+        XCTAssertEqual(sampleMiddleware.handleActionStateIOCount, 2)
 
-        afterReducer4.reducerIsDone()
-        XCTAssertEqual(sampleMiddleware.receiveContextCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionCount, 3)
-        XCTAssertEqual(sampleMiddleware.handleActionAfterReducerCount, 3)
+        io4.runIO(store.actionHandler)
+        XCTAssertEqual(sampleMiddleware.handleActionStateCount, 3)
+        XCTAssertEqual(sampleMiddleware.handleActionStateIOCount, 3)
 
         sampleMiddleware.send(action: .oneMore)
-        XCTAssertEqual(store.actionsReceived, [.oneMore])
+        XCTAssertEqual(store.actionsReceived.map(\.action), [.oneMore])
     }
 }
 
@@ -156,24 +126,19 @@ extension GatedMiddlewareTests {
         let gatedMiddleware = sampleMiddleware.gated(
             state: \AppState.sampleEnabled
         )
-        gatedMiddleware.receiveContext(getState: store.getState, output: store.actionHandler)
-        XCTAssertEqual(sampleMiddleware.receiveContextCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionCount, 0)
-        XCTAssertEqual(sampleMiddleware.handleActionAfterReducerCount, 0)
+        XCTAssertEqual(sampleMiddleware.handleActionStateCount, 0)
+        XCTAssertEqual(sampleMiddleware.handleActionStateIOCount, 0)
 
-        var afterReducer = AfterReducer.doNothing()
-        gatedMiddleware.handle(action: .somethingElse, from: .here(), afterReducer: &afterReducer)
-        XCTAssertEqual(sampleMiddleware.receiveContextCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionAfterReducerCount, 0)
+        let io = gatedMiddleware.handle(action: .somethingElse, from: .here(), state: store.getState)
+        XCTAssertEqual(sampleMiddleware.handleActionStateCount, 1)
+        XCTAssertEqual(sampleMiddleware.handleActionStateIOCount, 0)
 
-        afterReducer.reducerIsDone()
-        XCTAssertEqual(sampleMiddleware.receiveContextCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionAfterReducerCount, 1)
+        io.runIO(store.actionHandler)
+        XCTAssertEqual(sampleMiddleware.handleActionStateCount, 1)
+        XCTAssertEqual(sampleMiddleware.handleActionStateIOCount, 1)
 
         sampleMiddleware.send(action: .oneMore)
-        XCTAssertEqual(store.actionsReceived, [.oneMore])
+        XCTAssertEqual(store.actionsReceived.map(\.action), [.oneMore])
     }
 
     func testByStateAfterDisable() {
@@ -182,34 +147,26 @@ extension GatedMiddlewareTests {
         let gatedMiddleware = sampleMiddleware.gated(
             state: \AppState.sampleEnabled
         )
-        gatedMiddleware.receiveContext(getState: store.getState, output: store.actionHandler)
-        XCTAssertEqual(sampleMiddleware.receiveContextCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionCount, 0)
-        XCTAssertEqual(sampleMiddleware.handleActionAfterReducerCount, 0)
+        XCTAssertEqual(sampleMiddleware.handleActionStateCount, 0)
+        XCTAssertEqual(sampleMiddleware.handleActionStateIOCount, 0)
 
-        var afterReducer1 = AfterReducer.doNothing()
-        gatedMiddleware.handle(action: .somethingElse, from: .here(), afterReducer: &afterReducer1)
-        XCTAssertEqual(sampleMiddleware.receiveContextCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionAfterReducerCount, 0)
+        let io1 = gatedMiddleware.handle(action: .somethingElse, from: .here(), state: store.getState)
+        XCTAssertEqual(sampleMiddleware.handleActionStateCount, 1)
+        XCTAssertEqual(sampleMiddleware.handleActionStateIOCount, 0)
 
         store.state.sampleEnabled = .bypass
 
-        afterReducer1.reducerIsDone()
-        XCTAssertEqual(sampleMiddleware.receiveContextCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionAfterReducerCount, 1)
+        io1.runIO(store.actionHandler)
+        XCTAssertEqual(sampleMiddleware.handleActionStateCount, 1)
+        XCTAssertEqual(sampleMiddleware.handleActionStateIOCount, 1)
 
-        var afterReducer2 = AfterReducer.doNothing()
-        gatedMiddleware.handle(action: .somethingElse, from: .here(), afterReducer: &afterReducer2)
-        XCTAssertEqual(sampleMiddleware.receiveContextCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionAfterReducerCount, 1)
+        let io2 = gatedMiddleware.handle(action: .somethingElse, from: .here(), state: store.getState)
+        XCTAssertEqual(sampleMiddleware.handleActionStateCount, 1)
+        XCTAssertEqual(sampleMiddleware.handleActionStateIOCount, 1)
 
-        afterReducer2.reducerIsDone()
-        XCTAssertEqual(sampleMiddleware.receiveContextCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionAfterReducerCount, 1)
+        io2.runIO(store.actionHandler)
+        XCTAssertEqual(sampleMiddleware.handleActionStateCount, 1)
+        XCTAssertEqual(sampleMiddleware.handleActionStateIOCount, 1)
 
         sampleMiddleware.send(action: .oneMore)
         XCTAssertEqual(store.actionsReceived, [])
@@ -221,42 +178,33 @@ extension GatedMiddlewareTests {
         let gatedMiddleware = sampleMiddleware.gated(
             state: \AppState.sampleEnabled
         )
-        gatedMiddleware.receiveContext(getState: store.getState, output: store.actionHandler)
-        var afterReducer1 = AfterReducer.doNothing()
-        gatedMiddleware.handle(action: .somethingElse, from: .here(), afterReducer: &afterReducer1)
+        let io1 = gatedMiddleware.handle(action: .somethingElse, from: .here(), state: store.getState)
         store.state.sampleEnabled = .bypass
-        afterReducer1.reducerIsDone()
+        io1.runIO(store.actionHandler)
 
-        var afterReducer2 = AfterReducer.doNothing()
-        gatedMiddleware.handle(action: .somethingElse, from: .here(), afterReducer: &afterReducer2)
-        afterReducer2.reducerIsDone()
+        let io2 = gatedMiddleware.handle(action: .somethingElse, from: .here(), state: store.getState)
+        io2.runIO(store.actionHandler)
 
-        var afterReducer3 = AfterReducer.doNothing()
-        gatedMiddleware.handle(action: .somethingElse, from: .here(), afterReducer: &afterReducer3)
-        XCTAssertEqual(sampleMiddleware.receiveContextCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionAfterReducerCount, 1)
+        let io3 = gatedMiddleware.handle(action: .somethingElse, from: .here(), state: store.getState)
+        XCTAssertEqual(sampleMiddleware.handleActionStateCount, 1)
+        XCTAssertEqual(sampleMiddleware.handleActionStateIOCount, 1)
 
         store.state.sampleEnabled = .active
 
-        afterReducer3.reducerIsDone()
-        XCTAssertEqual(sampleMiddleware.receiveContextCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionAfterReducerCount, 1)
+        io3.runIO(store.actionHandler)
+        XCTAssertEqual(sampleMiddleware.handleActionStateCount, 1)
+        XCTAssertEqual(sampleMiddleware.handleActionStateIOCount, 1)
 
-        var afterReducer4 = AfterReducer.doNothing()
-        gatedMiddleware.handle(action: .somethingElse, from: .here(), afterReducer: &afterReducer4)
-        XCTAssertEqual(sampleMiddleware.receiveContextCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionCount, 2)
-        XCTAssertEqual(sampleMiddleware.handleActionAfterReducerCount, 1)
+        let io4 = gatedMiddleware.handle(action: .somethingElse, from: .here(), state: store.getState)
+        XCTAssertEqual(sampleMiddleware.handleActionStateCount, 2)
+        XCTAssertEqual(sampleMiddleware.handleActionStateIOCount, 1)
 
-        afterReducer4.reducerIsDone()
-        XCTAssertEqual(sampleMiddleware.receiveContextCount, 1)
-        XCTAssertEqual(sampleMiddleware.handleActionCount, 2)
-        XCTAssertEqual(sampleMiddleware.handleActionAfterReducerCount, 2)
+        io4.runIO(store.actionHandler)
+        XCTAssertEqual(sampleMiddleware.handleActionStateCount, 2)
+        XCTAssertEqual(sampleMiddleware.handleActionStateIOCount, 2)
 
         sampleMiddleware.send(action: .oneMore)
-        XCTAssertEqual(store.actionsReceived, [.oneMore])
+        XCTAssertEqual(store.actionsReceived.map(\.action), [.oneMore])
     }
 }
 
@@ -293,44 +241,37 @@ enum AppAction: Equatable {
 
 class Store {
     var state: AppState = AppState(sampleEnabled: .active)
-    var actionsReceived: [AppAction] = []
+    var actionsReceived: [DispatchedAction<AppAction>] = []
 
     var getState: (() -> AppState)!
     var actionHandler: AnyActionHandler<AppAction>!
 
     init() {
-        actionHandler = .init { action, _ in
-            self.actionsReceived.append(action)
+        actionHandler = AnyActionHandler { [weak self] action in
+            self?.actionsReceived.append(action)
         }
         getState = { self.state }
     }
 }
 
-class SampleMiddleware: Middleware {
+class SampleMiddleware: MiddlewareProtocol {
     typealias InputActionType = AppAction
     typealias OutputActionType = AppAction
     typealias StateType = AppState
 
-    var getState: GetState<AppState>?
     var output: AnyActionHandler<AppAction>?
-
-    var receiveContextCount: Int = 0
-    func receiveContext(getState: @escaping GetState<AppState>, output: AnyActionHandler<AppAction>) {
-        self.getState = getState
-        self.output = output
-        receiveContextCount += 1
-    }
 
     func send(action: AppAction) {
         output?.dispatch(action, from: .here())
     }
 
-    var handleActionCount: Int = 0
-    var handleActionAfterReducerCount: Int = 0
-    func handle(action: AppAction, from dispatcher: ActionSource, afterReducer: inout AfterReducer) {
-        handleActionCount += 1
-        afterReducer = .do {
-            self.handleActionAfterReducerCount += 1
+    var handleActionStateCount: Int = 0
+    var handleActionStateIOCount: Int = 0
+    func handle(action: AppAction, from dispatcher: ActionSource, state: GetState<AppState>) -> IO<OutputActionType> {
+        handleActionStateCount += 1
+        return IO { [weak self] output in
+            self?.output = output
+            self?.handleActionStateIOCount += 1
         }
     }
 }

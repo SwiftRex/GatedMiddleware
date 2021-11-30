@@ -1,4 +1,4 @@
-// swift-tools-version:5.2
+// swift-tools-version:5.4
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -15,7 +15,7 @@ let package = Package(
         .library(name: "GatedMiddleware", targets: ["GatedMiddleware"])
     ],
     dependencies: [
-        .package(url: "https://github.com/SwiftRex/SwiftRex.git", from: "0.7.0")
+        .package(url: "https://github.com/SwiftRex/SwiftRex.git", from: "0.8.8")
     ],
     targets: [
         .target(name: "GatedMiddleware", dependencies: [.product(name: "CombineRex", package: "SwiftRex")]),
