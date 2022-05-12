@@ -198,8 +198,6 @@ public final class GatedMiddleware<M: MiddlewareProtocol>: MiddlewareProtocol {
     ///            do anything in case the predicate is not satisfied, or it will forward the action to the inner middleware in case the predicate
     ///            is true.
     public func handle(action: M.InputActionType, from dispatcher: ActionSource, state: @escaping GetState<M.StateType>) -> IO<M.OutputActionType> {
-        print(action)
-        dump(state())
         guard gate.shouldHandleAction(action, state()) else { return .pure() }
 
         return middleware.handle(action: action, from: dispatcher, state: state)
